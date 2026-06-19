@@ -1,0 +1,16 @@
+subscription_id        = "00000000-0000-0000-0000-000000000000"
+product                = "demo"
+environment            = "prod"
+location               = "westeurope"
+short_region           = "weu"
+function_public_access = false
+target_backend_url     = "https://your-prod-backend.internal"
+
+schedules = [
+  {
+    name      = "expired-programs"
+    job_name  = "UpcomingExpiredPrograms"
+    frequency = "Day"
+    interval  = 1
+  }
+]

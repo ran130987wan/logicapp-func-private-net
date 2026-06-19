@@ -1,0 +1,19 @@
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+
+# .NET / Azure Functions
+**/bin/
+**/obj/
+**/local.settings.json
+
+# OS/editor
+.DS_Store
+.vscode/
+*.user
+*.suo
+
+# Logs
+*.log
