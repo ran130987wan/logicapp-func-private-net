@@ -3,6 +3,8 @@
 **/.terraform.lock.hcl
 **/*.tfstate
 **/*.tfstate.*
+**/*.tfplan
+**/tf.plan
 
 # .NET / Azure Functions
 **/bin/
