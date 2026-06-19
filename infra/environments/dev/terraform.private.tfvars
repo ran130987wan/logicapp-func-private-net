@@ -1,10 +1,10 @@
-subscription_id        = "cf83455a-73e2-41b7-b28b-fbbf1467713d"
-product                = "demo"
-environment            = "dev"
-location               = "westeurope"
-short_region           = "weu"
-function_public_access = true
-target_backend_url     = "https://your-cp-backend.internal"
+subscription_id                 = "cf83455a-73e2-41b7-b28b-fbbf1467713d"
+product                         = "demo"
+environment                     = "dev"
+location                        = "westeurope"
+short_region                    = "weu"
+function_public_access          = true
+target_backend_url              = "https://your-cp-backend.internal"
 function_maximum_instance_count = 10
 log_analytics_retention_days    = 30
 
