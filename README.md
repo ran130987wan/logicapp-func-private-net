@@ -13,25 +13,37 @@
 
 ## 🚀 New to This Project?
 
-**Start here for comprehensive understanding:**
+### Documentation Path
 
-1. **[Onboarding Guide for New Contributors](docs/ONBOARDING-NEW-CONTRIBUTOR.md)** — Mermaid diagrams covering:
-   - Why this POC exists (business rationale)
-   - Architecture diagrams (private & public connections)
-   - Data flow sequences (scheduler → function → backend)
-   - Monthly costing ($0.29/month breakdown)
-   - Next steps for getting started
+**1. Understand the POC** (10 min read)
+→ [Onboarding Guide for New Contributors](docs/ONBOARDING-NEW-CONTRIBUTOR.md)
+- Why this POC exists (business rationale)
+- Architecture diagrams (private & public connections)
+- Data flow sequences (scheduler → function → backend)
+- Monthly costing ($0.29/month breakdown)
 
-2. **[Architecture Decision Record (ADR)](docs/ARCHITECTURE-DECISIONS.md)** — Deep-dive into design choices:
-   - Why Consumption Logic Apps (not Standard)?
-   - Why Flex Consumption Function?
-   - Why VNet Integration for outbound?
-   - Why Function Key Auth?
-   - When to migrate to production architecture
+**2. Review Architecture Decisions** (15 min read)
+→ [Architecture Decision Record (ADR)](docs/ARCHITECTURE-DECISIONS.md)
+- Why Consumption Logic Apps (not Standard)?
+- Why Flex Consumption Function?
+- Why VNet Integration for outbound?
+- Why Function Key Auth?
+- When to migrate to production architecture
 
-3. **[Repository Structure](docs/STRUCTURE.md)** — Folder layout and organization
+**3. Run the POC** (45 min execution)
+→ [Execution Guide: Step-by-Step](docs/EXECUTION-GUIDE.md)
+- Prerequisites checklist
+- Phase 1: Environment setup
+- Phase 2: Local validation
+- Phase 3: Infrastructure deployment
+- Phase 4: Function deployment
+- Phase 5: Logic App verification
+- Phase 6: E2E testing
+- Troubleshooting & cleanup
 
-**For Governance & Policy:** See [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
+**Reference:**
+- [Repository Structure](docs/STRUCTURE.md) — Folder layout
+- [Governance & Policy](docs/GOVERNANCE.md) — Guardrails
 
 ---
 
