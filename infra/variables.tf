@@ -44,7 +44,7 @@ variable "function_maximum_instance_count" {
 variable "log_analytics_retention_days" {
   description = "Log Analytics retention for POC cost control"
   type        = number
-  default     = 7
+  default     = 30
 }
 
 variable "schedules" {
