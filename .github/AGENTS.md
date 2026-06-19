@@ -12,6 +12,8 @@ This repository uses specialized agents and reusable skills to run the Logic App
   - Restores/builds/runs function app and executes local smoke tests.
 - Execute POC Agent
   - Orchestrates full end-to-end execution with checkpoints.
+- Execute Local POC Agent
+  - Implements the full POC from a local machine and runs bootstrap, build, infra validate/plan, and governance checks.
 - Execute Governance Agent
   - Validates execution controls, approvals, and compliance guardrails.
 - Plan Infra Agent
@@ -38,6 +40,10 @@ This repository uses specialized agents and reusable skills to run the Logic App
 4. Run Execute Function Agent with skill poc-function.
 5. Run Execute POC Agent with skill poc-e2e to verify complete status.
 6. Run Execute Governance Agent with skill poc-governance before production-facing apply.
+
+Local-first option:
+
+1. Run Execute Local POC Agent when user asks to implement or validate the POC from local machine now.
 
 ## Safety Defaults
 

@@ -16,6 +16,7 @@ This folder documents the CI/CD toolchain used in this repository.
 - .github/agents/execute-infra.agent.md: Terraform execution flow for environment tfvars.
 - .github/agents/execute-function.agent.md: function app build/run execution flow.
 - .github/agents/execute-poc.agent.md: end-to-end POC execution orchestration.
+- .github/agents/execute-local-poc.agent.md: local-machine-first end-to-end POC implementation and validation.
 - .github/agents/execute-governance.agent.md: governance compliance and policy execution checks.
 
 ## Skills
