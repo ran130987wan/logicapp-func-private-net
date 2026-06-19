@@ -15,9 +15,10 @@ Execution flow:
 2. Build and publish function app code from src/MaintenanceApp.
 3. Run Terraform init/validate/plan with infra/environments/dev/terraform.private.tfvars.
 4. Apply Terraform only when the user explicitly asks.
-5. Validate Logic App workflows call the function endpoint successfully.
-6. Collect evidence: workflow run IDs, action status, and Function request logs.
-7. Summarize outcome with pass/fail by stage and actionable remediation.
+5. After function deployment, read the function host key and re-apply Terraform with function_host_key to add Logic App CallFunction actions.
+6. Validate Logic App workflows call the function endpoint successfully.
+7. Collect evidence: workflow run IDs, action status, and Function request logs.
+8. Summarize outcome with pass/fail by stage and actionable remediation.
 
 Rules:
 - Prefer private-oriented defaults and low-cost settings already defined in repo tfvars.

@@ -67,6 +67,12 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == 'true' && inputs.destroy == 'false' }}
         run: terraform apply -auto-approve tf.plan
 
+      - name: Host key rewire reminder
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == 'true' && inputs.destroy == 'false' }}
+        run: |
+          echo "Infra apply completed."
+          echo "Next: deploy the function, retrieve function_host_key, then run terraform apply again with -var function_host_key=<HOST_KEY> to add Logic App CallFunction actions."
+
       - name: Terraform destroy
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.destroy == 'true' && inputs.apply == 'false' }}
         run: terraform destroy -auto-approve -var-file=${{ env.TF_VARS_FILE }} -var "subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"

@@ -13,8 +13,10 @@ permissions:
 
 env:
   FUNCTION_APP_NAME: func-demo-dev-weu
+  RESOURCE_GROUP_NAME: rg-demo-dev-weu
   DOTNET_VERSION: 8.0.x
   PROJECT_PATH: src/MaintenanceApp
+  TF_VARS_FILE: environments/dev/terraform.private.tfvars
 
 jobs:
   build-deploy:
@@ -27,6 +29,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.6
 
       - name: Build and publish
         run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o ./output
@@ -43,3 +50,28 @@ jobs:
         with:
           app-name: ${{ env.FUNCTION_APP_NAME }}
           package: ./output
+
+      - name: Read function host key
+        id: host_key
+        shell: bash
+        run: |
+          key=$(az rest \
+            --method POST \
+            --url "https://management.azure.com/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/providers/Microsoft.Web/sites/${{ env.FUNCTION_APP_NAME }}/host/default/listkeys?api-version=2022-03-01" \
+            --query "functionKeys.default" -o tsv)
+
+          if [[ -z "$key" ]]; then
+            echo "Failed to retrieve function host key" >&2
+            exit 1
+          fi
+
+          echo "host_key=$key" >> "$GITHUB_OUTPUT"
+
+      - name: Re-apply Terraform wiring with host key
+        working-directory: infra
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var-file=${{ env.TF_VARS_FILE }} \
+            -var "subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+            -var "function_host_key=${{ steps.host_key.outputs.host_key }}"
