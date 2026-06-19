@@ -26,6 +26,10 @@ This repository uses specialized agents and reusable skills to run the Logic App
   - Validates execution controls, approvals, and compliance guardrails.
 - Plan Infra Agent
   - Plans and scopes infrastructure changes before execution.
+- Implement POC Agent
+  - Implements Azure infra + function deployment and validates end-to-end POC execution.
+- Validate Trigger Logs Agent
+  - Runs trigger validation and captures Logic App + Function telemetry evidence.
 
 ## Skills
 
@@ -48,6 +52,11 @@ This repository uses specialized agents and reusable skills to run the Logic App
 4. Run Execute Function Agent with skill poc-function.
 5. Run Execute POC Agent with skill poc-e2e to verify complete status.
 6. Run Execute Governance Agent with skill poc-governance before production-facing apply.
+
+Implementation option:
+
+1. Run Implement POC Agent when the user asks to deploy/implement the POC in Azure now.
+2. Run Validate Trigger Logs Agent immediately after deployment to produce trigger and logging evidence.
 
 Local-first option:
 
