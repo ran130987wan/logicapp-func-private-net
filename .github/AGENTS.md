@@ -30,6 +30,8 @@ This repository uses specialized agents and reusable skills to run the Logic App
   - Implements Azure infra + function deployment and validates end-to-end POC execution.
 - Validate Trigger Logs Agent
   - Runs trigger validation and captures Logic App + Function telemetry evidence.
+- Remove Infra Agent
+  - Tears down Terraform-managed Azure resources for this POC environment.
 
 ## Skills
 
@@ -57,6 +59,10 @@ Implementation option:
 
 1. Run Implement POC Agent when the user asks to deploy/implement the POC in Azure now.
 2. Run Validate Trigger Logs Agent immediately after deployment to produce trigger and logging evidence.
+
+Teardown option:
+
+1. Run Remove Infra Agent when the user asks to remove/destroy deployed Azure infra.
 
 Local-first option:
 
