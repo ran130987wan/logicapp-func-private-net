@@ -11,6 +11,30 @@
 >
 > This guide is intentionally verbose. Skip sections you already know.
 
+## 🚀 New to This Project?
+
+**Start here for comprehensive understanding:**
+
+1. **[Onboarding Guide for New Contributors](docs/ONBOARDING-NEW-CONTRIBUTOR.md)** — Mermaid diagrams covering:
+   - Why this POC exists (business rationale)
+   - Architecture diagrams (private & public connections)
+   - Data flow sequences (scheduler → function → backend)
+   - Monthly costing ($0.29/month breakdown)
+   - Next steps for getting started
+
+2. **[Architecture Decision Record (ADR)](docs/ARCHITECTURE-DECISIONS.md)** — Deep-dive into design choices:
+   - Why Consumption Logic Apps (not Standard)?
+   - Why Flex Consumption Function?
+   - Why VNet Integration for outbound?
+   - Why Function Key Auth?
+   - When to migrate to production architecture
+
+3. **[Repository Structure](docs/STRUCTURE.md)** — Folder layout and organization
+
+**For Governance & Policy:** See [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
+
+---
+
 ## POC Requirement (Authoritative)
 
 - The current POC target is private-oriented infrastructure defaults.
