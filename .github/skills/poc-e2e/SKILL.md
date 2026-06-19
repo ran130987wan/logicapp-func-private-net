@@ -19,7 +19,7 @@ Provide one repeatable workflow for full POC execution and status reporting.
    - terraform -chdir=infra init -backend=false
    - terraform -chdir=infra validate
 4. Infra plan stage (if authenticated)
-   - terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars
+   - terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
 
 ## Output format
 

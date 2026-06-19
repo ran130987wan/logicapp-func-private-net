@@ -19,7 +19,7 @@ Execution flow:
    - terraform -chdir=infra init -backend=false
    - terraform -chdir=infra validate
 6. If Azure auth is available, run plan:
-   - terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars
+   - terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
 7. Run governance verification:
    - ./development/scripts/verify-governance.sh
 

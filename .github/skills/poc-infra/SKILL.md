@@ -15,7 +15,7 @@ Execute infrastructure commands consistently and safely.
 terraform -chdir=infra fmt -recursive
 terraform -chdir=infra init
 terraform -chdir=infra validate
-terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars
+terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
 ```
 
 ## Apply policy
@@ -24,7 +24,7 @@ terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars
 - Command:
 
 ```bash
-terraform -chdir=infra apply -var-file=environments/dev/terraform.tfvars
+terraform -chdir=infra apply -var-file=environments/dev/terraform.private.tfvars
 ```
 
 ## Auth prerequisites

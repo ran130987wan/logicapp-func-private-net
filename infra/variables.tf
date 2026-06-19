@@ -26,7 +26,7 @@ variable "short_region" {
 variable "function_public_access" {
   description = "true = public inbound endpoint enabled"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "target_backend_url" {

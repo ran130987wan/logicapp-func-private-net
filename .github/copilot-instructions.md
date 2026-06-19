@@ -4,8 +4,9 @@ This repository deploys a Logic Apps + Azure Function pattern with private outbo
 
 ## Architecture assumptions
 
-- Start with Design A: Logic App Consumption calls Function over public HTTPS using function auth.
-- Function outbound traffic uses delegated subnet integration (Microsoft.App/environments).
+- POC target is private infrastructure first: private inbound for the Function app and private networking requirements for Logic Apps.
+- Keep Function outbound traffic on delegated subnet integration (Microsoft.App/environments).
+- Use the private tfvars profile (`infra/environments/dev/terraform.private.tfvars`) for infra workflows.
 - Keep Terraform modules simple and composable.
 
 ## Coding conventions

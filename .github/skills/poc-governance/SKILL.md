@@ -17,6 +17,7 @@ Validate that execution follows policy, approval controls, and documented guardr
    - Confirm no secrets are committed to repository files.
 3. Environment control
    - Confirm env-scoped tfvars under infra/environments/.
+   - Confirm private execution profile (`environments/dev/terraform.private.tfvars`) is used by infra workflow defaults.
 4. Test control
    - Confirm three-schedule local invocation test exists and passes when host is running.
 

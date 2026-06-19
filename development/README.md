@@ -4,7 +4,7 @@ This folder contains local developer tooling for this repository.
 
 ## Quick start
 
-1. Copy infra/environments/dev/terraform.tfvars and update values for your subscription and backend.
+1. Copy infra/environments/dev/terraform.private.tfvars and update values for your subscription and backend.
 2. Copy src/MaintenanceApp/local.settings.json.example to src/MaintenanceApp/local.settings.json.
 3. Copy development/azure.env.example to development/azure.env and update if needed.
 4. Source your environment file: `source development/azure.env`.

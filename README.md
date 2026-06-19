@@ -11,6 +11,14 @@
 >
 > This guide is intentionally verbose. Skip sections you already know.
 
+## POC Requirement (Authoritative)
+
+- The current POC target is private-oriented infrastructure defaults.
+- Terraform execution should use `infra/environments/dev/terraform.private.tfvars`.
+- Function public inbound access should remain disabled by default in infra deployment workflows.
+- Scheduler behavior requirement stays unchanged: one Function endpoint must handle three scheduled Logic App invocations.
+- Current Terraform scheduler resource is Consumption Logic App (`azurerm_logic_app_workflow`); full private Logic App inbound path requires migration to Logic App Standard + VNet integration.
+
 ## Repository Structure
 
 - infra/ : Terraform root and Azure resource definitions.
@@ -50,13 +58,13 @@ dotnet build src/MaintenanceApp/MaintenanceApp.csproj -c Release
 # 4) Login before real plan/apply
 az login --tenant b52aa991-8ac7-4b6c-8bc9-03fb21d0d4ac
 az account set --subscription cf83455a-73e2-41b7-b28b-fbbf1467713d
-terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars
+terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
 ```
 
 Notes:
 
 - `bootstrap.sh` now skips `terraform plan` when `az login` is not present.
-- `infra/environments/dev/terraform.tfvars` already points to your subscription.
+- `infra/environments/dev/terraform.private.tfvars` is the default private profile for this POC.
 - In Codespaces with multiple dotnet installs, prefer `/usr/bin` runtime path for net8 function hosting.
 
 ## Governance and Policy

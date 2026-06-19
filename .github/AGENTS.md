@@ -2,6 +2,13 @@
 
 This repository uses specialized agents and reusable skills to run the Logic App + Function + Terraform proof of concept from scratch.
 
+## Actual POC Requirement
+
+- Build private-oriented Azure infrastructure for Logic App + Function execution.
+- Use private execution defaults in Terraform workflows via `infra/environments/dev/terraform.private.tfvars`.
+- Keep the scheduler requirement intact: one Function endpoint should still handle three schedule-driven invocations.
+- Current Terraform still uses `azurerm_logic_app_workflow` (Consumption); full private inbound for Logic App requires migration to Logic App Standard with VNet integration.
+
 ## Agent Roles
 
 - Execute Bootstrap Agent

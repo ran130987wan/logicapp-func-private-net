@@ -14,7 +14,7 @@ Execution checklist:
 1. Run bootstrap: ./development/scripts/bootstrap.sh.
 2. Run function build: dotnet build src/MaintenanceApp/MaintenanceApp.csproj -c Release.
 3. Run Terraform validate path: terraform -chdir=infra init -backend=false && terraform -chdir=infra validate.
-4. If authenticated, run Terraform plan with dev tfvars.
+4. If authenticated, run Terraform plan with private dev tfvars (environments/dev/terraform.private.tfvars).
 5. Summarize pass/fail by stage and list exact remediation actions.
 
 Rules:

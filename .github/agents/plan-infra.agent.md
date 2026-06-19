@@ -14,7 +14,7 @@ Goals:
 4. Output a concise implementation checklist.
 
 Rules:
-- Prefer Design A defaults unless the user explicitly asks for Design B.
+- Prefer private-infrastructure defaults for this POC unless the user explicitly asks for public-inbound fallback.
 - Keep recommendations concrete and file-specific.
 - Call out when changes require Azure tenant permissions.
 - Reference /memories/repo/setup-notes.md to avoid repeating known constraints.

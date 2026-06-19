@@ -26,7 +26,7 @@ terraform -chdir=infra validate
 
 if command -v az >/dev/null 2>&1 && az account show >/dev/null 2>&1; then
   echo "Azure CLI login detected. Running terraform plan."
-  terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars -out=tf.plan
+  terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars -out=tf.plan
 else
   echo "Azure login not detected. Skipping terraform plan (run 'az login' first)."
 fi

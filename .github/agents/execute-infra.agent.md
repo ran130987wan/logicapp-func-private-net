@@ -14,7 +14,7 @@ Execution flow:
 1. Run terraform -chdir=infra fmt -recursive.
 2. Run terraform -chdir=infra init.
 3. Run terraform -chdir=infra validate.
-4. Run terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars.
+4. Run terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars.
 5. Run apply only when user explicitly requests deployment.
 
 Rules:
