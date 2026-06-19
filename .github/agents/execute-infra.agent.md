@@ -23,3 +23,4 @@ Rules:
 - If plan fails due to missing Azure auth, instruct login commands with provided tenant/subscription values.
 - Do not modify unrelated Terraform resources.
 - Record confirmed infra execution constraints in /memories/repo/setup-notes.md.
+- Keep POC infra cost-aware by default (private dev tfvars, conservative scale settings, no premium SKU escalations unless requested).

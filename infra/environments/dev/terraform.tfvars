@@ -5,6 +5,8 @@ location               = "westeurope"
 short_region           = "weu"
 function_public_access = true
 target_backend_url     = "https://your-cp-backend.internal"
+function_maximum_instance_count = 10
+log_analytics_retention_days    = 7
 
 schedules = [
   {
@@ -23,6 +25,6 @@ schedules = [
     name      = "hourly-reconcile"
     job_name  = "HourlyReconciliation"
     frequency = "Hour"
-    interval  = 6
+    interval  = 12
   }
 ]

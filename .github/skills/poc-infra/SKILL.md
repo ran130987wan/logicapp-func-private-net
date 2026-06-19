@@ -27,6 +27,11 @@ terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
 terraform -chdir=infra apply -var-file=environments/dev/terraform.private.tfvars
 ```
 
+## Cost baseline
+
+- Keep POC on low-cost defaults: Function max scale cap, short log retention, and Consumption Logic App resources.
+- Avoid premium or always-on alternatives unless explicitly requested.
+
 ## Auth prerequisites
 
 If plan/apply fails due to auth, run:

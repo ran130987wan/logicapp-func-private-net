@@ -18,3 +18,4 @@ Rules:
 - Keep recommendations concrete and file-specific.
 - Call out when changes require Azure tenant permissions.
 - Reference /memories/repo/setup-notes.md to avoid repeating known constraints.
+- Prioritize low-cost alternatives first (Consumption-tier services, lower retention windows, and controlled scale caps).

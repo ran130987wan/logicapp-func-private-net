@@ -36,7 +36,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku                 = "PerGB2018"
-  retention_in_days   = 30
+  retention_in_days   = var.log_analytics_retention_days
   tags                = var.tags
 }
 
@@ -72,7 +72,7 @@ resource "azurerm_function_app_flex_consumption" "main" {
   runtime_name    = "dotnet-isolated"
   runtime_version = "8.0"
 
-  maximum_instance_count        = 100
+  maximum_instance_count        = var.function_maximum_instance_count
   instance_memory_in_mb         = 2048
   public_network_access_enabled = var.function_public_access
   virtual_network_subnet_id     = azurerm_subnet.func_integration.id

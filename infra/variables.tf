@@ -35,6 +35,18 @@ variable "target_backend_url" {
   default     = "https://your-cp-backend.internal"
 }
 
+variable "function_maximum_instance_count" {
+  description = "Maximum burst scale for Function Flex Consumption (lower keeps POC cost predictable)"
+  type        = number
+  default     = 20
+}
+
+variable "log_analytics_retention_days" {
+  description = "Log Analytics retention for POC cost control"
+  type        = number
+  default     = 7
+}
+
 variable "schedules" {
   description = "One Logic App schedule per entry"
   type = list(object({
@@ -60,7 +72,7 @@ variable "schedules" {
       name      = "hourly-reconcile"
       job_name  = "HourlyReconciliation"
       frequency = "Hour"
-      interval  = 6
+      interval  = 12
     }
   ]
 }

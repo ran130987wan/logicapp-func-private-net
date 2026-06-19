@@ -6,6 +6,11 @@ Keep environment-specific tfvars files in this folder.
 - dev/terraform.private.tfvars: private-infra development values (Function public access disabled)
 - prod/terraform.tfvars.example: production template
 
+Cost-aware defaults in dev profiles:
+
+- `function_maximum_instance_count` keeps Flex Consumption burst limits conservative.
+- `log_analytics_retention_days` keeps monitoring retention spend low for POC runs.
+
 Usage:
 
 - terraform -chdir=infra plan -var-file=environments/dev/terraform.tfvars
