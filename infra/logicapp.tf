@@ -1,5 +1,7 @@
-# function_host_key must be supplied after function code is deployed.
-# Get it with: az rest --method POST --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Web/sites/<func>/host/default/listkeys?api-version=2022-03-01" --query "functionKeys.default" -o tsv
+# Logic App HTTP action calls the function endpoint.
+# If function_host_key is supplied, it will be appended as a query param for Function-level auth.
+# Leave function_host_key empty for development/testing; retrieve it post-deploy with:
+# az rest --method POST --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Web/sites/<func>/host/default/listkeys?api-version=2022-03-01" --query "functionKeys.default" -o tsv
 locals {
   schedules_by_name = { for s in var.schedules : s.name => s }
 }
