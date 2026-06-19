@@ -15,6 +15,7 @@ This folder contains local developer tooling for this repository.
 9. Run development/scripts/check-github-access.sh to diagnose GitHub admin/API access.
 10. Run development/scripts/fix-repo-access.sh to apply branch protection (for private repositories, this requires GitHub Pro; on free plans, make the repository public first).
 11. Run development/scripts/validate-trigger-logs.sh to trigger all workflows and collect Function log evidence.
+12. Run development/scripts/create-scaffold.sh [target-dir] to generate a reusable starter scaffold.
 
 ## Notes
 

@@ -18,6 +18,9 @@ This folder documents the CI/CD toolchain used in this repository.
 - .github/agents/execute-poc.agent.md: end-to-end POC execution orchestration.
 - .github/agents/execute-local-poc.agent.md: local-machine-first end-to-end POC implementation and validation.
 - .github/agents/execute-governance.agent.md: governance compliance and policy execution checks.
+- .github/agents/implement-poc.agent.md: deploy/implement full Azure POC with verification evidence.
+- .github/agents/validate-trigger-logs.agent.md: validate schedule triggers and collect telemetry logs.
+- .github/agents/remove-infra.agent.md: safe Terraform-driven teardown for deployed environments.
 
 ## Skills
 

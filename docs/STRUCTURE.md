@@ -8,11 +8,19 @@ This project is split by concern so infrastructure, application code, and automa
 - src/: Azure Function source code.
 - development/: local developer scripts and environment templates.
 - .github/workflows/: CI/CD pipelines.
+- scaffold/: reusable templates for similar Logic App + Function POC projects.
 - .github/agents/: custom GitHub Copilot agent definitions.
 - .github/prompts/: reusable prompt templates.
 - .github/tools/: automation and workflow documentation.
 - /memories/repo/: repository-scoped execution memory and operational notes.
 - /memories/session/: temporary session-scoped memory.
+
+## Scaffold layout
+
+- scaffold/templates/.github/: starter agent, skill, and workflow templates.
+- scaffold/templates/infra/: starter Terraform snippets for schedules and function invocation.
+- scaffold/templates/docs/: implementation runbook template for new repos.
+- development/scripts/create-scaffold.sh: copies scaffold templates into a target directory.
 
 ## Terraform layout
 
