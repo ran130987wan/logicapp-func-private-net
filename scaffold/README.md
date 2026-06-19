@@ -17,8 +17,9 @@ Use this scaffold kit to bootstrap a new repository that follows the same delive
    - AZURE_CLIENT_ID
    - AZURE_TENANT_ID
    - AZURE_SUBSCRIPTION_ID
-5. Run Terraform validate and function build locally.
-6. Open PR and ensure required checks pass.
+5. Run the first Terraform apply without `function_host_key` to create infra and workflows.
+6. Deploy function code, retrieve the host key, then re-apply Terraform with `function_host_key` to add Logic App HTTP actions.
+7. Open PR and ensure required checks pass.
 
 ## Template contents
 
@@ -35,5 +36,6 @@ Use this scaffold kit to bootstrap a new repository that follows the same delive
 1. Land templates and CI first.
 2. Add infra resources incrementally.
 3. Add function endpoint and local tests.
-4. Add trigger/log validation automation.
-5. Add destroy/teardown process before first apply.
+4. Document the two-step host-key wiring flow before first apply.
+5. Add trigger/log validation automation.
+6. Add destroy/teardown process before first apply.

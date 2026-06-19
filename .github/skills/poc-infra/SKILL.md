@@ -21,11 +21,18 @@ terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
 ## Apply policy
 
 - Only run apply after explicit user confirmation.
-- Command:
+- Commands:
 
 ```bash
 terraform -chdir=infra apply -var-file=environments/dev/terraform.private.tfvars
 ```
+
+```bash
+terraform -chdir=infra apply -var-file=environments/dev/terraform.private.tfvars -var "function_host_key=<HOST_KEY>"
+```
+
+- First apply creates infra and workflows.
+- After function deployment, retrieve the host key and run the second apply to add Logic App `CallFunction` actions.
 
 ## Cost baseline
 

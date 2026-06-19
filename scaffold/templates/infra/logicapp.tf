@@ -1,5 +1,6 @@
 locals {
-  schedules_by_name = { for s in var.schedules : s.name => s }
+  schedules_by_name   = { for s in var.schedules : s.name => s }
+  enable_function_call = length(nonsensitive(var.function_host_key)) > 0
 }
 
 resource "azurerm_logic_app_workflow" "schedule" {
@@ -18,7 +19,7 @@ resource "azurerm_logic_app_trigger_recurrence" "schedule" {
 }
 
 resource "azurerm_logic_app_action_http" "call_function" {
-  for_each     = azurerm_logic_app_workflow.schedule
+  for_each     = local.enable_function_call ? azurerm_logic_app_workflow.schedule : {}
   name         = "CallFunction"
   logic_app_id = each.value.id
   method       = "POST"

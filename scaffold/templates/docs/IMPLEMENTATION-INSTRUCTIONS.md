@@ -10,9 +10,10 @@
 
 1. Set environment values in infra/environments/dev/terraform.private.tfvars.
 2. Define schedules with one workflow per entry.
-3. Decide function auth model:
-   - Anonymous endpoint for fast POC
-   - Function key or managed identity for stronger control
+3. Use Design A by default for a runnable POC:
+   - Public Function hostname
+   - Function key auth on inbound
+   - Private outbound via VNet integration where needed
 
 ## 3. Validate locally
 
@@ -25,7 +26,9 @@
 
 1. Trigger Infra workflow with apply=true only when approved.
 2. Deploy function app code.
-3. Run trigger/log validation and capture evidence.
+3. Read the function host key.
+4. Re-apply Terraform with function_host_key to add Logic App CallFunction actions.
+5. Run trigger/log validation and capture evidence.
 
 ## 5. Operate safely
 

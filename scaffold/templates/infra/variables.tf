@@ -24,7 +24,7 @@ variable "short_region" {
 }
 
 variable "function_host_key" {
-  description = "Optional function key used by Logic App HTTP action."
+  description = "Function host key for Logic App HTTP auth. Leave empty on first apply, then re-apply Terraform with the key after function deployment."
   type        = string
   default     = ""
   sensitive   = true
