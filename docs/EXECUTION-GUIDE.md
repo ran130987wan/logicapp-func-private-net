@@ -147,7 +147,7 @@ terraform plan -var-file=environments/dev/terraform.private.tfvars -out=tfplan.b
 # Review output:
 # - Should show ~15-20 resources to create
 # - Check for any errors before proceeding
-# - Note resource names (e.g., demo-dev-weu-rg)
+# - Note resource names (e.g., rg-demo-dev-weu)
 ```
 
 ### 2.3 Build Function Locally
@@ -200,10 +200,8 @@ curl -X POST http://localhost:7071/api/jobs/execute \
 
 # Expected response (HTTP 200):
 # {
-#   "status": "success",
-#   "jobName": "test-daily",
-#   "executedAt": "2026-06-19T10:30:00Z",
-#   "taskCount": 3
+#   "status": "Success",
+#   "executedJob": "test-daily"
 # }
 
 # Try with invalid payload
@@ -232,7 +230,8 @@ curl -X POST http://localhost:7071/api/jobs/execute \
 # Navigate back to infra directory
 cd /workspaces/logicapp-func-private-net/infra
 
-# Apply infrastructure (this actually creates resources)
+# Apply infrastructure (this creates the Function, VNet integration, and workflows)
+# The first apply does not wire Logic App HTTP actions until you have a host key.
 terraform apply -var-file=environments/dev/terraform.private.tfvars -auto-approve
 
 # Expected output:
@@ -240,8 +239,8 @@ terraform apply -var-file=environments/dev/terraform.private.tfvars -auto-approv
 # Apply complete! Resources: 15 added, 0 changed, 0 destroyed.
 #
 # Outputs:
-# function_app_name = "demo-dev-weu-func"
-# resource_group_name = "demo-dev-weu-rg"
+# function_app_name = "func-demo-dev-weu"
+# resource_group = "rg-demo-dev-weu"
 # ...
 
 # Save outputs for next phase
@@ -253,40 +252,45 @@ cat outputs.json
 
 ```bash
 # List created resources
-az resource list --resource-group demo-dev-weu-rg --output table
+az resource list --resource-group rg-demo-dev-weu --output table
 
 # Expected: Function App, Storage, VNet, Logic Apps, Log Analytics, etc.
 
 # Get Function App details
-az functionapp show --name demo-dev-weu-func --resource-group demo-dev-weu-rg
+az functionapp show --name func-demo-dev-weu --resource-group rg-demo-dev-weu
 
 # Get VNet details
-az network vnet show --name demo-dev-weu-vnet --resource-group demo-dev-weu-rg --output table
+az network vnet show --name vnet-demo-dev-weu --resource-group rg-demo-dev-weu --output table
 ```
 
 ### 3.3 Retrieve Function Key
 
 ```bash
-# Get function keys
+# Publish the Function app before retrieving the host key.
+cd /workspaces/logicapp-func-private-net/src/MaintenanceApp
+func azure functionapp publish func-demo-dev-weu
+
+# Get function host key
 az rest --method POST \
-  --url "https://management.azure.com/subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/demo-dev-weu-rg/providers/Microsoft.Web/sites/demo-dev-weu-func/host/default/listkeys?api-version=2022-03-01" \
+  --url "https://management.azure.com/subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/rg-demo-dev-weu/providers/Microsoft.Web/sites/func-demo-dev-weu/host/default/listkeys?api-version=2022-03-01" \
   --query "functionKeys.default" -o tsv
 
 # Expected: Base64-encoded key (e.g., a1b2c3d4e5f6g7h8...)
-# Save this key — you'll need it for Logic App configuration
+# Save this key — you need it for the second Terraform apply that adds CallFunction.
+
+# Re-apply Terraform with the host key to add Logic App HTTP actions.
+cd /workspaces/logicapp-func-private-net/infra
+terraform apply -var-file=environments/dev/terraform.private.tfvars -var "function_host_key=<PASTE_KEY_HERE>" -auto-approve
 ```
 
 ### 3.4 Verify Network Configuration
 
 ```bash
 # Check VNet
-az network vnet show --name demo-dev-weu-vnet --resource-group demo-dev-weu-rg
-
-# Check NSG rules
-az network nsg rule list --resource-group demo-dev-weu-rg --nsg-name demo-dev-weu-nsg
+az network vnet show --name vnet-demo-dev-weu --resource-group rg-demo-dev-weu
 
 # Verify Function App VNet integration
-az functionapp vnet-integration list --name demo-dev-weu-func --resource-group demo-dev-weu-rg
+az functionapp vnet-integration list --name func-demo-dev-weu --resource-group rg-demo-dev-weu
 ```
 
 ✅ **Infrastructure deployed.** All resources created and configured.
@@ -302,7 +306,7 @@ az functionapp vnet-integration list --name demo-dev-weu-func --resource-group d
 cd src/MaintenanceApp
 
 # Publish function app
-func azure functionapp publish demo-dev-weu-func
+func azure functionapp publish func-demo-dev-weu
 
 # Expected output:
 # Getting site publishing credentials for function app
@@ -314,15 +318,15 @@ func azure functionapp publish demo-dev-weu-func
 
 ```bash
 # Check function status
-az functionapp show --name demo-dev-weu-func --resource-group demo-dev-weu-rg \
+az functionapp show --name func-demo-dev-weu --resource-group rg-demo-dev-weu \
   --query "state" --output tsv
 # Expected: Running
 
 # Get function app URL
-FUNC_URL=$(az functionapp show --name demo-dev-weu-func --resource-group demo-dev-weu-rg \
+FUNC_URL=$(az functionapp show --name func-demo-dev-weu --resource-group rg-demo-dev-weu \
   --query "defaultHostName" --output tsv)
 echo "Function URL: $FUNC_URL"
-# Expected: demo-dev-weu-func.azurewebsites.net
+# Expected: func-demo-dev-weu.azurewebsites.net
 ```
 
 ### 4.3 Test Function Endpoint via Azure
@@ -330,7 +334,7 @@ echo "Function URL: $FUNC_URL"
 ```bash
 # Get function key
 FUNC_KEY=$(az rest --method POST \
-  --url "https://management.azure.com/subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/demo-dev-weu-rg/providers/Microsoft.Web/sites/demo-dev-weu-func/host/default/listkeys?api-version=2022-03-01" \
+  --url "https://management.azure.com/subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/rg-demo-dev-weu/providers/Microsoft.Web/sites/func-demo-dev-weu/host/default/listkeys?api-version=2022-03-01" \
   --query "functionKeys.default" -o tsv)
 
 # Test function endpoint
@@ -346,12 +350,12 @@ curl -X POST "https://${FUNC_URL}/api/jobs/execute?code=${FUNC_KEY}" \
 ```bash
 # Get Application Insights resource
 az monitor app-insights component show \
-  --app demo-dev-weu-ai \
-  --resource-group demo-dev-weu-rg
+  --app appi-demo-dev-weu \
+  --resource-group rg-demo-dev-weu
 
 # Check recent telemetry (may take 1-2 minutes)
 az monitor metrics list \
-  --resource /subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/demo-dev-weu-rg/providers/Microsoft.Insights/components/demo-dev-weu-ai \
+  --resource /subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/rg-demo-dev-weu/providers/Microsoft.Insights/components/appi-demo-dev-weu \
   --metric "Requests/Count" \
   --aggregation Total
 ```
@@ -366,25 +370,24 @@ az monitor metrics list \
 
 ```bash
 # List deployed Logic Apps
-az logic workflow list --resource-group demo-dev-weu-rg --output table
+az logic workflow list --resource-group rg-demo-dev-weu --output table
 
 # Expected: 3 workflows
-# - demo-dev-daily-expired-programs
-# - demo-dev-12h-hourly-reconcile
-# - demo-dev-weekly-weekly-cleanup
+# - logic-demo-expired-programs-dev-weu
+# - logic-demo-hourly-reconcile-dev-weu
+# - logic-demo-weekly-cleanup-dev-weu
 ```
 
 ### 5.2 Verify Logic App HTTP Action Configuration
 
 ```bash
-# Get Logic App definition (first one)
-az logic workflow definition show \
-  --name demo-dev-daily-expired-programs \
-  --resource-group demo-dev-weu-rg \
-  | jq '.actions.HTTP_Invoke.inputs.uri' # Check if function URL is set with key
+# Get Logic App HTTP action URI
+az rest --method GET \
+  --url "https://management.azure.com/subscriptions/cf83455a-73e2-41b7-b28b-fbbf1467713d/resourceGroups/rg-demo-dev-weu/providers/Microsoft.Logic/workflows/logic-demo-expired-programs-dev-weu?api-version=2019-05-01" \
+  --query "properties.definition.actions.CallFunction.inputs.uri" -o tsv
 
 # Expected output shows URI with function key appended:
-# "https://demo-dev-weu-func.azurewebsites.net/api/jobs/execute?code=<FUNC_KEY>"
+# "https://func-demo-dev-weu.azurewebsites.net/api/jobs/execute?code=<FUNC_KEY>"
 ```
 
 ### 5.3 Manual Logic App Test
@@ -392,16 +395,16 @@ az logic workflow definition show \
 ```bash
 # Trigger a workflow manually
 az logic workflow run create \
-  --name demo-dev-daily-expired-programs \
-  --resource-group demo-dev-weu-rg
+  --name logic-demo-expired-programs-dev-weu \
+  --resource-group rg-demo-dev-weu
 
 # Expected: Returns run ID (e.g., 08587363633...)
 
 # Monitor the run
 RUN_ID="08587363633..." # from previous command
 az logic workflow run show \
-  --name demo-dev-daily-expired-programs \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-expired-programs-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --run-id ${RUN_ID} \
   --query "{status: status, startTime: startTime, endTime: endTime}"
 
@@ -413,8 +416,8 @@ az logic workflow run show \
 ```bash
 # Query logs for workflow executions
 az monitor log-analytics query \
-  --workspace demo-dev-weu-la \
-  --resource-group demo-dev-weu-rg \
+  --workspace log-demo-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --analytics-query 'AzureDiagnostics 
     | where Category == "WorkflowRuntime" 
     | where ResourceProvider == "Microsoft.Logic"
@@ -435,26 +438,25 @@ az monitor log-analytics query \
 # Trigger Daily workflow
 echo "Triggering Daily (expired-programs)..."
 az logic workflow run create \
-  --name demo-dev-daily-expired-programs \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-expired-programs-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --query "name" --output tsv
 
 # Trigger 12h workflow
 echo "Triggering 12h (hourly-reconcile)..."
 az logic workflow run create \
-  --name demo-dev-12h-hourly-reconcile \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-hourly-reconcile-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --query "name" --output tsv
 
 # Trigger Weekly workflow
 echo "Triggering Weekly (weekly-cleanup)..."
 az logic workflow run create \
-  --name demo-dev-weekly-weekly-cleanup \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-weekly-cleanup-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --query "name" --output tsv
 
-# Wait 30 seconds for executions to complete
-sleep 30
+# Wait briefly, then inspect the latest runs in Azure
 
 echo "✓ All three workflows triggered"
 ```
@@ -464,21 +466,21 @@ echo "✓ All three workflows triggered"
 ```bash
 # Check Daily execution
 az logic workflow run list \
-  --name demo-dev-daily-expired-programs \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-expired-programs-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --query "[0].{status: status, endTime: endTime, properties: properties}" \
   --output json | jq '.status'
 
 # Check 12h execution
 az logic workflow run list \
-  --name demo-dev-12h-hourly-reconcile \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-hourly-reconcile-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --query "[0].{status: status}" --output json | jq '.status'
 
 # Check Weekly execution
 az logic workflow run list \
-  --name demo-dev-weekly-weekly-cleanup \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-weekly-cleanup-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --query "[0].{status: status}" --output json | jq '.status'
 
 # Expected: All show "Succeeded"
@@ -489,8 +491,8 @@ az logic workflow run list \
 ```bash
 # Query all traces from this execution
 az monitor log-analytics query \
-  --workspace demo-dev-weu-la \
-  --resource-group demo-dev-weu-rg \
+  --workspace log-demo-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --analytics-query 'traces 
     | where timestamp > ago(5m)
     | where tostring(customDimensions.Category) == "JobExecution"
@@ -504,8 +506,8 @@ az monitor log-analytics query \
 ```bash
 # Get function execution statistics
 az monitor app-insights metrics show \
-  --app demo-dev-weu-ai \
-  --resource-group demo-dev-weu-rg \
+  --app appi-demo-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --metric "server_requests_count" \
   --aggregation Count
 
@@ -558,7 +560,7 @@ az login --tenant b52aa991-8ac7-4b6c-8bc9-03fb21d0d4ac
 
 # Problem: "Deployment slot not available"
 # Solution: Check if function app exists first
-az functionapp show --name demo-dev-weu-func --resource-group demo-dev-weu-rg
+az functionapp show --name func-demo-dev-weu --resource-group rg-demo-dev-weu
 ```
 
 ### Issue: Logic App Returns 401 Unauthorized
@@ -570,21 +572,20 @@ az rest --method POST \
   --url "https://management.azure.com/subscriptions/.../regenerateKey?keyType=default&api-version=2022-03-01" \
   | jq '.defaultKey'
 
-# Update Terraform variable and reapply
-terraform apply -var-file=environments/dev/terraform.private.tfvars
+# Re-apply Terraform with the replacement key
+terraform apply -var-file=environments/dev/terraform.private.tfvars -var "function_host_key=<NEW_KEY>"
 ```
 
 ### Issue: VNet Integration Not Working
 
 ```bash
 # Problem: Function can't reach backend
-# Solution: Check NSG rules
-az network nsg rule list --nsg-name demo-dev-weu-nsg --resource-group demo-dev-weu-rg
+# Solution: Check delegated subnet attachment and app settings
+az network vnet subnet show --name snet-func-integration \
+  --vnet-name vnet-demo-dev-weu \
+  --resource-group rg-demo-dev-weu
 
-# Check delegated subnet
-az network vnet subnet show --name demo-dev-weu-delegated-subnet \
-  --vnet-name demo-dev-weu-vnet \
-  --resource-group demo-dev-weu-rg
+az functionapp config appsettings list --name func-demo-dev-weu --resource-group rg-demo-dev-weu
 ```
 
 ### Issue: Cold Start Latency High
@@ -598,8 +599,8 @@ az network vnet subnet show --name demo-dev-weu-delegated-subnet \
 
 # Monitor: Check Application Insights "server_response_time"
 az monitor app-insights metrics show \
-  --app demo-dev-weu-ai \
-  --resource-group demo-dev-weu-rg \
+  --app appi-demo-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --metric "server_response_time"
 ```
 
@@ -607,12 +608,12 @@ az monitor app-insights metrics show \
 
 ```bash
 # Stream logs from function app
-az functionapp log tail --name demo-dev-weu-func --resource-group demo-dev-weu-rg
+az functionapp log tail --name func-demo-dev-weu --resource-group rg-demo-dev-weu
 
 # View Log Analytics data
 az monitor log-analytics query \
-  --workspace demo-dev-weu-la \
-  --resource-group demo-dev-weu-rg \
+  --workspace log-demo-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --analytics-query 'AppTraces 
     | top 50 by TimeGenerated desc'
 ```
@@ -626,18 +627,18 @@ az monitor log-analytics query \
 ```bash
 # Stop Logic App schedules (so they don't keep running)
 az logic workflow update \
-  --name demo-dev-daily-expired-programs \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-expired-programs-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --set properties.state=Disabled
 
 az logic workflow update \
-  --name demo-dev-12h-hourly-reconcile \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-hourly-reconcile-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --set properties.state=Disabled
 
 az logic workflow update \
-  --name demo-dev-weekly-weekly-cleanup \
-  --resource-group demo-dev-weu-rg \
+  --name logic-demo-weekly-cleanup-dev-weu \
+  --resource-group rg-demo-dev-weu \
   --set properties.state=Disabled
 ```
 
@@ -645,7 +646,7 @@ az logic workflow update \
 
 ```bash
 # WARNING: This deletes everything (all resources in the group)
-az group delete --name demo-dev-weu-rg --yes --no-wait
+az group delete --name rg-demo-dev-weu --yes --no-wait
 
 # Or use Terraform:
 cd infra
@@ -659,9 +660,9 @@ rm -rf .terraform terraform.tfstate* tfplan.bin
 
 ```bash
 # Just disable Logic App schedules to save cost
-az logic workflow update --name demo-dev-daily-expired-programs --resource-group demo-dev-weu-rg --set properties.state=Disabled
-az logic workflow update --name demo-dev-12h-hourly-reconcile --resource-group demo-dev-weu-rg --set properties.state=Disabled
-az logic workflow update --name demo-dev-weekly-weekly-cleanup --resource-group demo-dev-weu-rg --set properties.state=Disabled
+az logic workflow update --name logic-demo-expired-programs-dev-weu --resource-group rg-demo-dev-weu --set properties.state=Disabled
+az logic workflow update --name logic-demo-hourly-reconcile-dev-weu --resource-group rg-demo-dev-weu --set properties.state=Disabled
+az logic workflow update --name logic-demo-weekly-cleanup-dev-weu --resource-group rg-demo-dev-weu --set properties.state=Disabled
 
 # Infrastructure remains; cost drops to ~$0.15/month (only Function + Storage + Logging)
 ```

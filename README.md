@@ -49,9 +49,9 @@
 
 ## POC Requirement (Authoritative)
 
-- The current POC target is private-oriented infrastructure defaults.
+- The current POC target is Design A: authenticated public Function ingress plus private outbound VNet integration.
 - Terraform execution should use `infra/environments/dev/terraform.private.tfvars`.
-- Function public inbound access should remain disabled by default in infra deployment workflows.
+- The default dev profile keeps Function public ingress enabled because Consumption Logic Apps call the Function public hostname; auth is enforced with a Function key.
 - Scheduler behavior requirement stays unchanged: one Function endpoint must handle three scheduled Logic App invocations.
 - Current Terraform scheduler resource is Consumption Logic App (`azurerm_logic_app_workflow`); full private Logic App inbound path requires migration to Logic App Standard + VNet integration.
 - Cost profile for this POC is intentionally lean: conservative Function scale cap, minimum supported monitoring retention, and no premium service tiers by default.

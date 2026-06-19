@@ -78,7 +78,7 @@ variable "schedules" {
 }
 
 variable "function_host_key" {
-  description = "Function app host key for Logic App → Function auth. Supply after code is deployed. Leave empty to skip Logic App action wiring."
+  description = "Function app host key for Logic App → Function auth. Supply after function deploy, then re-apply Terraform to add the HTTP action. Leave empty to create workflows without wiring the function call yet."
   type        = string
   sensitive   = true
   default     = ""

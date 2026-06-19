@@ -42,12 +42,12 @@ Internet → Logic Apps (public endpoint) → Azure Function (public endpoint)
 ### Our Solution ✅
 
 ```
-Timer triggers → Logic Apps (private tier) → Azure Function (private networking)
-                                           → Backend Service (private subnet only)
+Timer triggers → Logic Apps (Consumption) → Azure Function (public hostname + function key)
+                                          → Backend Service (private outbound via VNet integration)
 ```
 
 **Benefits:**
-- **Inbound**: Logic Apps call Function via function key (not internet accessible)
+- **Inbound**: Logic Apps call the Function public hostname using a Function key
 - **Outbound**: Function communicates to backend over VNet integration (no internet egress)
 - **Cost**: Flex Consumption Function scales down to zero; no idle charges
 - **Security**: Defense-in-depth — multiple layers of network isolation
@@ -64,7 +64,7 @@ graph TB
     
     Schedule -->|Timer trigger| LogicApps["Logic Apps<br/>(Consumption tier)"]
     LogicApps -->|HTTP POST with payload| Function["Azure Function<br/>(Flex Consumption)"]
-    Function -->|Private VNet connection| Backend["Backend Service<br/>(on private subnet)"]
+    Function -->|Private VNet egress| Backend["Target Backend<br/>(external dependency)"]
     
     AppInsights["📊 Application Insights"]
     LogicAnalytics["📈 Log Analytics"]
@@ -89,7 +89,7 @@ graph TB
 | **Azure Function (Flex Consumption)** | HTTP endpoint; executes business logic | Auto-scales; scales to zero | $0.00001447/GB/sec (pay-per-use) |
 | **VNet Integration** | Private outbound traffic for Function | N/A (no separate billing) | Included in Flex plan |
 | **Log Analytics** | Centralized logging & query | Data ingestion volume | $2.76/GB ingested (retention) |
-| **Storage Account** | Function runtime state | Minimal | ~$1/month (minimal) |
+| **Storage Account** | Function runtime state | Minimal | Low, usage-based storage cost |
 
 ---
 
@@ -99,11 +99,10 @@ graph TB
 
 ```mermaid
 graph LR
-    RG["Resource Group<br/>(demo-dev-weu-rg)"]
+    RG["Resource Group<br/>(rg-demo-dev-weu)"]
     
-    RG --> VNet["Virtual Network<br/>(demo-dev-vnet)"]
+    RG --> VNet["Virtual Network<br/>(vnet-demo-dev-weu)"]
     RG --> Subnet["Subnet<br/>(delegated to App Service)"]
-    RG --> NSG["Network Security Group<br/>(lock down outbound)"]
     
     RG --> Storage["Storage Account<br/>(function runtime)"]
     RG --> AppPlan["App Service Plan<br/>(Flex Consumption)"]
@@ -111,7 +110,6 @@ graph LR
     
     AppPlan --> Function
     VNet --> Subnet
-    Subnet --> NSG
     Subnet --> Function
     Storage --> Function
     
@@ -121,9 +119,9 @@ graph LR
     Function -.->|emit diagnostics| LA
     Function -.->|emit metrics| AppInsights
     
-    RG --> LogicApp1["Logic App: Daily<br/>(expired-programs)"]
-    RG --> LogicApp2["Logic App: 12h<br/>(hourly-reconcile)"]
-    RG --> LogicApp3["Logic App: Weekly<br/>(weekly-cleanup)"]
+    RG --> LogicApp1["Logic App: logic-demo-expired-programs-dev-weu"]
+    RG --> LogicApp2["Logic App: logic-demo-hourly-reconcile-dev-weu"]
+    RG --> LogicApp3["Logic App: logic-demo-weekly-cleanup-dev-weu"]
     
     LogicApp1 -->|HTTP POST| Function
     LogicApp2 -->|HTTP POST| Function
@@ -140,29 +138,30 @@ graph LR
 
 ### Network Isolation Detail
 
+This repository deploys VNet integration for the Function app. It does not deploy an NSG or backend service; those are environment-specific dependencies outside this repo.
+
 ```mermaid
 graph TB
     Internet["🌍 Internet"]
     
     subgraph Azure VNet["Azure VNet (10.0.0.0/16)"]
         subgraph Subnet["Delegated Subnet (10.0.1.0/24)"]
-            Function["✓ Function App<br/>(private IP)"]
+            Function["✓ Function App<br/>(VNet-integrated outbound)"]
         end
         
-        subgraph PrivateSubnet["Private Subnet (10.0.2.0/24)"]
-            Backend["Backend Service<br/>(no internet access)"]
+        subgraph OptionalSubnet["Optional backend network (not deployed here)"]
+            Backend["Backend Service<br/>(example target)"]
         end
-        
-        NSG["Network Security Group<br/>Outbound rules:<br/>✗ Internet<br/>✓ Internal only"]
     end
     
-    Internet -->|❌ BLOCKED| Function
-    Function -->|✓ VNet Peering| Backend
+    LogicApp["Logic Apps service"] -->|HTTPS + function key| Internet
+    Internet -->|public hostname| Function
+    Function -->|private route| Backend
     
     style Internet fill:#ffcdd2
     style Function fill:#c8e6c9
     style Backend fill:#c8e6c9
-    style NSG fill:#fff9c4
+    style LogicApp fill:#fff3e0
 ```
 
 ---
@@ -201,17 +200,16 @@ sequenceDiagram
     participant Func as Function App
     
     Dev->>TF: terraform apply
-    TF->>Func: Deploy function code
-    Func-->>TF: Return default hostname
+    TF->>Func: Create Function app and Logic App workflows
     
     Dev->>Az: az rest --method POST ... /listkeys
     Az->>Func: Request function keys
     Func-->>Az: Return master + default keys
     Az-->>Dev: Display key
     
-    Dev->>TF: supply function_host_key in tfvars
-    TF->>TF: Store in Terraform state
-    TF->>Func: Configure Logic App action with key
+    Dev->>Func: Publish function code
+    Dev->>TF: Re-apply with function_host_key
+    TF->>TF: Add Logic App CallFunction actions with ?code=
 ```
 
 ---
@@ -264,24 +262,20 @@ sequenceDiagram
 graph TB
     Function["Azure Function<br/>(Flex Consumption)"]
     
-    VNetInt["VNet Service Endpoint<br/>(delegated subnet)"]
+    VNetInt["Delegated subnet<br/>(snet-func-integration)"]
     
-    NSG["Network Security Group<br/>Outbound Rules"]
-    
-    Backend["Backend Service<br/>(Private IP)"]
+    Backend["Backend Service<br/>(private target example)"]
     
     Internet["Internet<br/>(Blocked)"]
     
     Function -->|1. Initialize outbound| VNetInt
-    VNetInt -->|2. Check NSG rules| NSG
-    NSG -->|✓ Allow internal| Backend
-    NSG -->|✗ Deny internet| Internet
+    VNetInt -->|2. Reach configured private target| Backend
+    VNetInt -.->|Optional external egress path depends on environment| Internet
     
     style Function fill:#e3f2fd
     style Backend fill:#c8e6c9
     style Internet fill:#ffcdd2
     style VNetInt fill:#fff3e0
-    style NSG fill:#fff9c4
 ```
 
 ---
@@ -315,7 +309,7 @@ graph TB
 - Logic Apps use Consumption tier (managed Timer → HTTP action)
 - Function inbound requires **Function Key auth** (not internet-unauthenticated)
 - Function outbound is **100% private** via VNet integration
-- **Estimated monthly cost: ~$3–5** (see [Costing](#monthly-costing) for breakdown)
+- **Estimated monthly cost: low for POC usage** (see [Costing](#monthly-costing) for assumptions and caveats)
 
 **Best for:**
 - POC / Proof-of-concept work
@@ -389,7 +383,7 @@ graph TB
         
         LA -->|Log retention| LAE["30-day retention<br/>included in App Insights<br/>= $0.138/month"]
         
-        Network -->|VNet, NSG| NE["VNet (no charge)<br/>NSG (no charge)<br/>= $0.00/month"]
+        Network -->|VNet integration path| NE["VNet integration<br/>(included in plan)<br/>= $0.00 incremental"]
         
         LE --> Total
         FE --> Total
@@ -414,7 +408,7 @@ graph TB
 | **Storage Account** | ~100 MB (logs + state) | $0.018/GB | **$0.002** |
 | **Application Insights** | ~50 MB ingestion | $2.76/GB | **$0.138** |
 | **Log Analytics** | Included in App Insights | — | **$0.138** |
-| **VNet & NSG** | Included in subscription | — | **$0.00** |
+| **VNet Integration Path** | Included in Flex plan | — | **$0.00 incremental** |
 | | | **TOTAL** | **$0.29/month** |
 
 ### Cost Scaling Scenarios

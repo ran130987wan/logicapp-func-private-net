@@ -220,12 +220,12 @@ The Function must call a **backend service** on a private subnet. We need to dec
 graph LR
     Function["Function<br/>(Flex)"]
     VNetInt["VNet Integration<br/>(delegated subnet)"]
-    Backend["Backend<br/>(private IP)"]
-    Internet["Internet<br/>(blocked)"]
+    Backend["Backend<br/>(private target)"]
+    Internet["Internet<br/>(environment-dependent)"]
     
     Function -->|Dedicated NIC| VNetInt
-    VNetInt -->|✓ Intra-VNet| Backend
-    VNetInt -->|✗ Outbound blocked| Internet
+    VNetInt -->|Preferred private route| Backend
+    VNetInt -.->|Other egress depends on environment controls| Internet
     
     style Backend fill:#c8e6c9
     style Internet fill:#ffcdd2
@@ -261,8 +261,8 @@ graph LR
 ### Decision
 
 **Use VNet Integration** because:
-1. **Private by default** — Function gets private IP in delegated subnet
-2. **No internet egress** — all traffic stays in VNet
+1. **Private outbound path** — Function can reach private targets through the delegated subnet
+2. **Environment-controlled egress** — outbound behavior can be constrained by surrounding network design
 3. **Included in plan** — no extra cost
 4. **Compliance-ready** — foundation for future regulated workloads
 5. **Simple setup** — Terraform manages delegation automatically
@@ -273,7 +273,7 @@ graph LR
 |-----|-----|
 | ✅ Private-by-default | ❌ Requires VNet (but we need it anyway) |
 | ✅ No extra cost | ❌ Slightly more complex networking |
-| ✅ Compliance-friendly | ❌ NSG rules needed (but documented) |
+| ✅ Compliance-friendly | ❌ Full isolation still depends on surrounding network controls outside this repo |
 | ✅ Easy to restrict | ❌ Cannot easily call internet APIs (but we don't need to) |
 
 ### Architecture Impact
@@ -285,19 +285,16 @@ graph TB
             Function["Function<br/>(private outbound only)"]
         end
         
-        subgraph PrivateSubnet["Private Subnet (10.0.2.0/24)"]
+        subgraph PrivateSubnet["Optional backend network"]
             Backend["Backend Service"]
         end
-        
-        NSG["Network Security Group<br/>Outbound Rules"]
     end
     
     Function -->|Dedicated NIC| DelegatedSubnet
-    DelegatedSubnet -->|Check rules| NSG
-    NSG -->|✓ Allow| Backend
+    DelegatedSubnet -->|Reach private target| Backend
     
     Internet["Internet"]
-    NSG -->|✗ Deny| Internet
+    DelegatedSubnet -.->|Other egress path depends on environment| Internet
 ```
 
 ---
@@ -489,7 +486,7 @@ We need to define and deploy Azure resources consistently and repeatably.
 ```
 infra/
   main.tf (main resources)
-  network.tf (VNet, NSG)
+    network.tf (VNet and subnets)
   function.tf (Function app)
   logicapp.tf (Logic apps)
   variables.tf (inputs)
