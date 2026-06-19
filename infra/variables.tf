@@ -77,6 +77,13 @@ variable "schedules" {
   ]
 }
 
+variable "function_host_key" {
+  description = "Function app host key for Logic App → Function auth. Supply after code is deployed. Leave empty to skip Logic App action wiring."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "tags" {
   type = map(string)
   default = {

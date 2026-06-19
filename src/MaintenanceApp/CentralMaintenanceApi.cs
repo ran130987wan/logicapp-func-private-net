@@ -21,7 +21,7 @@ public class CentralMaintenanceApi
 
     [Function("ExecuteMaintenancePipeline")]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "jobs/execute")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "jobs/execute")] HttpRequest req)
     {
         _logger.LogInformation("Scheduled maintenance signal received.");
 

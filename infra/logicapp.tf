@@ -1,8 +1,5 @@
-data "azurerm_function_app_host_keys" "main" {
-  name                = azurerm_function_app_flex_consumption.main.name
-  resource_group_name = azurerm_resource_group.main.name
-}
-
+# function_host_key must be supplied after function code is deployed.
+# Get it with: az rest --method POST --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Web/sites/<func>/host/default/listkeys?api-version=2022-03-01" --query "functionKeys.default" -o tsv
 locals {
   schedules_by_name = { for s in var.schedules : s.name => s }
 }
@@ -28,7 +25,7 @@ resource "azurerm_logic_app_action_http" "call_function" {
   name         = "CallFunction"
   logic_app_id = each.value.id
   method       = "POST"
-  uri          = "https://${azurerm_function_app_flex_consumption.main.default_hostname}/api/jobs/execute?code=${data.azurerm_function_app_host_keys.main.default_function_key}"
+  uri          = "https://${azurerm_function_app_flex_consumption.main.default_hostname}/api/jobs/execute${var.function_host_key != "" ? "?code=${var.function_host_key}" : ""}"
 
   headers = {
     Content-Type = "application/json"
