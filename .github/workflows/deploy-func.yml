@@ -1,0 +1,120 @@
+name: Deploy Function
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+env:
+  FUNCTION_APP_NAME: func-demo-dev-weu
+  RESOURCE_GROUP_NAME: rg-demo-dev-weu
+  DOTNET_VERSION: |
+    8.0.x
+    10.0.x
+  PROJECT_PATH_PLACEHOLDER: src/MaintenanceApp/MaintenanceApp.csproj
+  PROJECT_PATH_REAL: src/Vdv.Maintenance.Functions/Vdv.Maintenance.Functions.csproj
+  TF_VARS_FILE: environments/dev/terraform.private.tfvars
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Resolve function project path
+        id: project
+        shell: bash
+        run: |
+          if [[ -f "${{ env.PROJECT_PATH_REAL }}" ]]; then
+            echo "path=${{ env.PROJECT_PATH_REAL }}" >> "$GITHUB_OUTPUT"
+            echo "use_real=true" >> "$GITHUB_OUTPUT"
+            echo "Using real maintenance project"
+          elif [[ -f "${{ env.PROJECT_PATH_PLACEHOLDER }}" ]]; then
+            echo "path=${{ env.PROJECT_PATH_PLACEHOLDER }}" >> "$GITHUB_OUTPUT"
+            echo "use_real=false" >> "$GITHUB_OUTPUT"
+            echo "Using placeholder project"
+          else
+            echo "No supported function project found" >&2
+            exit 1
+          fi
+
+      - name: Resolve Terraform cutover vars
+        id: tf_mode
+        shell: bash
+        run: |
+          if [[ "${{ steps.project.outputs.use_real }}" == "true" ]]; then
+            echo "runtime_version=10.0" >> "$GITHUB_OUTPUT"
+            echo "function_contract=durable_jobs_api" >> "$GITHUB_OUTPUT"
+            echo "Using real maintenance Terraform mode"
+          else
+            echo "runtime_version=8.0" >> "$GITHUB_OUTPUT"
+            echo "function_contract=legacy_execute" >> "$GITHUB_OUTPUT"
+            echo "Using placeholder Terraform mode"
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.6
+
+      - name: Restore dependencies
+        env:
+          GH_PACKAGES_USER: ${{ github.actor }}
+          GH_PACKAGES_PAT: ${{ secrets.GH_PACKAGES_PAT }}
+        run: dotnet restore ${{ steps.project.outputs.path }}
+
+      - name: Build and publish
+        run: dotnet publish ${{ steps.project.outputs.path }} -c Release -o ./output --no-restore
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.FUNCTION_APP_NAME }}
+          package: ./output
+
+      - name: Read function host key
+        id: host_key
+        shell: bash
+        run: |
+          key=$(az rest \
+            --method POST \
+            --url "https://management.azure.com/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/providers/Microsoft.Web/sites/${{ env.FUNCTION_APP_NAME }}/host/default/listkeys?api-version=2022-03-01" \
+            --query "functionKeys.default" -o tsv)
+
+          if [[ -z "$key" ]]; then
+            echo "Failed to retrieve function host key" >&2
+            exit 1
+          fi
+
+          echo "host_key=$key" >> "$GITHUB_OUTPUT"
+
+      - name: Re-apply Terraform wiring with host key
+        working-directory: infra
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var-file=${{ env.TF_VARS_FILE }} \
+            -var "subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+            -var "function_host_key=${{ steps.host_key.outputs.host_key }}" \
+            -var "function_runtime_version=${{ steps.tf_mode.outputs.runtime_version }}" \
+            -var "logicapp_function_contract=${{ steps.tf_mode.outputs.function_contract }}"

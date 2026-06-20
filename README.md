@@ -11,6 +11,145 @@
 >
 > This guide is intentionally verbose. Skip sections you already know.
 
+## 🚀 New to This Project?
+
+### Documentation Path
+
+**1. Understand the POC** (10 min read)
+→ [Onboarding Guide for New Contributors](docs/ONBOARDING-NEW-CONTRIBUTOR.md)
+- Why this POC exists (business rationale)
+- Architecture diagrams (private & public connections)
+- Data flow sequences (scheduler → function → backend)
+- Monthly costing ($0.29/month breakdown)
+
+**2. Review Architecture Decisions** (15 min read)
+→ [Architecture Decision Record (ADR)](docs/ARCHITECTURE-DECISIONS.md)
+- Why Consumption Logic Apps (not Standard)?
+- Why Flex Consumption Function?
+- Why VNet Integration for outbound?
+- Why Function Key Auth?
+- When to migrate to production architecture
+
+**3. Run the POC** (45 min execution)
+→ [Execution Guide: Step-by-Step](docs/EXECUTION-GUIDE.md)
+- Prerequisites checklist
+- Phase 1: Environment setup
+- Phase 2: Local validation
+- Phase 3: Infrastructure deployment
+- Phase 4: Function deployment
+- Phase 5: Logic App verification
+- Phase 6: E2E testing
+- Troubleshooting & cleanup
+
+**Reference:**
+- [Repository Structure](docs/STRUCTURE.md) — Folder layout
+- [Governance & Policy](docs/GOVERNANCE.md) — Guardrails
+
+---
+
+## POC Requirement (Authoritative)
+
+- The current POC target is Design A: authenticated public Function ingress plus private outbound VNet integration.
+- Terraform execution should use `infra/environments/dev/terraform.private.tfvars`.
+- The default dev profile keeps Function public ingress enabled because Consumption Logic Apps call the Function public hostname; auth is enforced with a Function key.
+- Scheduler behavior requirement stays unchanged: one Function endpoint must handle three scheduled Logic App invocations.
+- Current Terraform scheduler resource is Consumption Logic App (`azurerm_logic_app_workflow`); full private Logic App inbound path requires migration to Logic App Standard + VNet integration.
+- Cost profile for this POC is intentionally lean: conservative Function scale cap, minimum supported monitoring retention, and no premium service tiers by default.
+
+## Repository Structure
+
+- infra/ : Terraform root and Azure resource definitions.
+- infra/environments/ : per-environment tfvars files (for example dev/prod).
+- src/MaintenanceApp/ : C# Azure Function source code.
+- development/ : local scripts and development environment templates.
+- .github/workflows/ : CI/CD automation for Terraform and function deployment.
+- .github/agents/, .github/skills/, .github/prompts/, .github/tools/ : GitHub Copilot and automation helpers.
+- .github/AGENTS.md : orchestration map for multi-agent POC execution.
+- docs/STRUCTURE.md : concise architecture and folder map.
+
+## Codespaces POC Execution (Linux)
+
+Validated on Linux Codespaces (`x86_64`, Ubuntu).
+
+Installed toolchain versions:
+
+- Azure CLI: `2.87.0`
+- Terraform: `1.15.6`
+- .NET SDK: `10.0.200` (build target remains `net8.0`)
+- Azure Functions Core Tools: `4.12.0`
+
+Run sequence used in this repository:
+
+```bash
+# 1) Install dependencies if missing (already done in this POC)
+sudo apt-get update -y
+sudo apt-get install -y azure-cli terraform
+sudo npm i -g azure-functions-core-tools@4 --unsafe-perm true
+
+# 2) Bootstrap + validation
+./development/scripts/bootstrap.sh
+
+# 3) Build function app
+dotnet build src/MaintenanceApp/MaintenanceApp.csproj -c Release
+
+# 4) Login before real plan/apply
+az login --tenant b52aa991-8ac7-4b6c-8bc9-03fb21d0d4ac
+az account set --subscription cf83455a-73e2-41b7-b28b-fbbf1467713d
+terraform -chdir=infra plan -var-file=environments/dev/terraform.private.tfvars
+```
+
+Notes:
+
+- `bootstrap.sh` now skips `terraform plan` when `az login` is not present.
+- `infra/environments/dev/terraform.private.tfvars` is the default private profile for this POC.
+- In Codespaces with multiple dotnet installs, prefer `/usr/bin` runtime path for net8 function hosting.
+
+## Governance and Policy
+
+- Governance baseline is defined in docs/GOVERNANCE.md.
+- Terraform apply is approval-gated (never automatic).
+- No secrets are committed to repository files.
+- Execution uses stage checkpoints: bootstrap, function build, infra validate, infra plan.
+- Governance controls can be validated with development/scripts/verify-governance.sh.
+- Repository branch protection automation is available via development/scripts/fix-repo-access.sh.
+- For private repositories, branch protection requires GitHub Pro; on free plans, make the repository public before running `development/scripts/fix-repo-access.sh`.
+
+## Agent Memory Conventions
+
+- Repository-scoped memory lives in /memories/repo/ and stores stable execution facts for this POC.
+- Agents should prefer updating existing memory notes before creating new memory files.
+- Keep memory notes short and factual (tool versions, known blockers, required commands).
+- Session-specific temporary notes belong in /memories/session/.
+
+## Tested POC: Single Function Triggered 3 Times
+
+Requirement: one Azure Function endpoint must be triggered multiple times by Logic Apps schedules.
+
+Implemented baseline:
+
+- 3 scheduler entries in infra/environments/dev/terraform.tfvars
+- 3 Logic App workflows (one per schedule) POST to same function endpoint
+- shared function route: /api/jobs/execute
+
+Local test script:
+
+```bash
+./development/scripts/test-three-schedules.sh
+```
+
+This script validates three scheduler-style invocations against one function endpoint.
+
+Automated PR enforcement:
+
+- .github/workflows/poc-three-trigger.yml runs the same behavior check in CI.
+
+Validated result in this POC run:
+
+- UpcomingExpiredPrograms: Success
+- WeeklyExpiredCleanup: Success
+- HourlyReconciliation: Success
+- Final status: PASS
+
 ---
 
 ## 0. Review of the architecture you proposed

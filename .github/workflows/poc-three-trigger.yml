@@ -1,0 +1,111 @@
+name: POC Three Trigger Validation
+
+"on":
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  three-trigger-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
+      AzureWebJobsStorage: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Resolve function project path
+        id: project
+        shell: bash
+        run: |
+          if [[ -f src/MaintenanceApp/MaintenanceApp.csproj ]]; then
+            echo "path=src/MaintenanceApp/MaintenanceApp.csproj" >> "$GITHUB_OUTPUT"
+            echo "project_dir=src/MaintenanceApp" >> "$GITHUB_OUTPUT"
+            echo "legacy_mode=true" >> "$GITHUB_OUTPUT"
+          elif [[ -f src/Vdv.Maintenance.Functions/Vdv.Maintenance.Functions.csproj ]]; then
+            echo "path=src/Vdv.Maintenance.Functions/Vdv.Maintenance.Functions.csproj" >> "$GITHUB_OUTPUT"
+            echo "project_dir=src/Vdv.Maintenance.Functions" >> "$GITHUB_OUTPUT"
+            echo "legacy_mode=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No supported function project found" >&2
+            exit 1
+          fi
+
+      - name: Restore function project
+        env:
+          GH_PACKAGES_USER: ${{ github.actor }}
+          GH_PACKAGES_PAT: ${{ secrets.GH_PACKAGES_PAT }}
+        run: dotnet restore ${{ steps.project.outputs.path }}
+
+      - name: Setup Node.js (for Functions Core Tools)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Azure Functions Core Tools
+        run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
+
+      - name: Build function app
+        run: dotnet build ${{ steps.project.outputs.path }} -c Release --no-restore
+
+      - name: Run three-trigger validation (legacy contract)
+        if: ${{ steps.project.outputs.legacy_mode == 'true' }}
+        shell: bash
+        run: |
+          set -eo pipefail
+          chmod +x development/scripts/test-three-schedules.sh
+
+          log_file="/tmp/func-host.log"
+          : > "$log_file"
+
+          pushd "${{ steps.project.outputs.project_dir }}" >/dev/null
+          dotnet run >"$log_file" 2>&1 &
+          func_pid=$!
+          popd >/dev/null
+
+          cleanup() {
+            if ps -p "$func_pid" >/dev/null 2>&1; then
+              kill "$func_pid" >/dev/null 2>&1 || true
+              wait "$func_pid" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -sS http://localhost:7071/admin/host/status >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "$ready" -ne 1 ]]; then
+            echo "Function host did not become ready"
+            tail -n 120 "$log_file" || true
+            exit 1
+          fi
+
+          ./development/scripts/test-three-schedules.sh
+
+          echo "--- host tail ---"
+          tail -n 40 "$log_file" || true
+
+      - name: Skip legacy three-trigger validation
+        if: ${{ steps.project.outputs.legacy_mode != 'true' }}
+        run: |
+          echo "Legacy three-trigger runtime test skipped for real maintenance project."
+          echo "Use infrastructure contract switch (logicapp_function_contract=durable_jobs_api) and environment-specific validation for durable endpoints."
