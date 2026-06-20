@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -31,7 +35,30 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Resolve function project path
+        id: project
+        shell: bash
+        run: |
+          if [[ -f src/Vdv.Maintenance.Functions/Vdv.Maintenance.Functions.csproj ]]; then
+            echo "path=src/Vdv.Maintenance.Functions/Vdv.Maintenance.Functions.csproj" >> "$GITHUB_OUTPUT"
+            echo "Using real maintenance project"
+          elif [[ -f src/MaintenanceApp/MaintenanceApp.csproj ]]; then
+            echo "path=src/MaintenanceApp/MaintenanceApp.csproj" >> "$GITHUB_OUTPUT"
+            echo "Using placeholder project"
+          else
+            echo "No supported function project found" >&2
+            exit 1
+          fi
+
+      - name: Restore function project
+        env:
+          GH_PACKAGES_USER: ${{ github.actor }}
+          GH_PACKAGES_PAT: ${{ secrets.GH_PACKAGES_PAT }}
+        run: dotnet restore ${{ steps.project.outputs.path }}
 
       - name: Build function app
-        run: dotnet build src/MaintenanceApp/MaintenanceApp.csproj -c Release
+        run: dotnet build ${{ steps.project.outputs.path }} -c Release --no-restore

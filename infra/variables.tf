@@ -35,6 +35,18 @@ variable "target_backend_url" {
   default     = "https://your-cp-backend.internal"
 }
 
+variable "vault_api_url" {
+  description = "Base URL of vault-api (Refit IVdvDataApi)."
+  type        = string
+  default     = "https://your-vault-api.internal"
+}
+
+variable "infra_api_url" {
+  description = "Base URL of infra-api (Refit IInfrastructureApi)."
+  type        = string
+  default     = "https://your-infra-api.internal"
+}
+
 variable "function_maximum_instance_count" {
   description = "Maximum burst scale for Function Flex Consumption (lower keeps POC cost predictable)"
   type        = number

@@ -5,6 +5,8 @@ location                        = "westeurope"
 short_region                    = "weu"
 function_public_access          = true
 target_backend_url              = "https://your-cp-backend.internal"
+vault_api_url                   = "https://your-vault-api.internal"
+infra_api_url                   = "https://your-infra-api.internal"
 function_maximum_instance_count = 10
 log_analytics_retention_days    = 30
 

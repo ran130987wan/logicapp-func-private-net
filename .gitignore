@@ -9,6 +9,7 @@
 # .NET / Azure Functions
 **/bin/
 **/obj/
+**/output/
 **/local.settings.json
 
 # OS/editor

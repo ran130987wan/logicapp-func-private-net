@@ -31,6 +31,18 @@ resource "azurerm_role_assignment" "func_storage" {
   principal_id         = azurerm_user_assigned_identity.func.principal_id
 }
 
+resource "azurerm_role_assignment" "func_storage_queue" {
+  scope                = azurerm_storage_account.func.id
+  role_definition_name = "Storage Queue Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.func.principal_id
+}
+
+resource "azurerm_role_assignment" "func_storage_table" {
+  scope                = azurerm_storage_account.func.id
+  role_definition_name = "Storage Table Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.func.principal_id
+}
+
 resource "azurerm_log_analytics_workspace" "main" {
   name                = "log-${var.product}-${var.environment}-${var.short_region}"
   resource_group_name = azurerm_resource_group.main.name
@@ -91,7 +103,16 @@ resource "azurerm_function_app_flex_consumption" "main" {
     AzureWebJobsStorage__credential  = "managedidentity"
     AzureWebJobsStorage__clientId    = azurerm_user_assigned_identity.func.client_id
     TargetBackendUrl                 = var.target_backend_url
+    VaultApiServiceApi               = var.vault_api_url
+    InfraServiceApi                  = var.infra_api_url
+    Environment                      = var.environment
+    "Azure:Region"                   = var.location
+    "JobScheduler:ActiveRegion"      = var.location
   }
 
-  depends_on = [azurerm_role_assignment.func_storage]
+  depends_on = [
+    azurerm_role_assignment.func_storage,
+    azurerm_role_assignment.func_storage_queue,
+    azurerm_role_assignment.func_storage_table,
+  ]
 }

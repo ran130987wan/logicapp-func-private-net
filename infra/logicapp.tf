@@ -3,7 +3,7 @@
 # retrieve the host key and re-apply Terraform to add the authenticated HTTP action.
 # az rest --method POST --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Web/sites/<func>/host/default/listkeys?api-version=2022-03-01" --query "functionKeys.default" -o tsv
 locals {
-  schedules_by_name  = { for s in var.schedules : s.name => s }
+  schedules_by_name    = { for s in var.schedules : s.name => s }
   enable_function_call = length(nonsensitive(var.function_host_key)) > 0
 }
 
