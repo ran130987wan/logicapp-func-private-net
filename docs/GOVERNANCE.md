@@ -36,7 +36,8 @@ This policy governs execution of the Logic App + Function + Terraform proof of c
 
 - Local validation must include three sequential scheduler-style invocations.
 - Command: development/scripts/test-three-schedules.sh
-- POC is considered valid when all three invocations return status Success.
+- Contract mode defaults to `legacy_execute` and expects `status: Success` responses.
+- When contract mode is `durable_jobs_api`, the test expects orchestration response payloads containing `statusQueryGetUri`.
 - Pull requests must pass .github/workflows/poc-three-trigger.yml for automated enforcement.
 
 ## Branch Protection and Required Checks
