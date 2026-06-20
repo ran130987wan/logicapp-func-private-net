@@ -23,6 +23,23 @@ variable "short_region" {
   default = "weu"
 }
 
+variable "function_runtime_version" {
+  description = "Function runtime version for Flex Consumption (8.0 for placeholder, 10.0 for real maintenance service)."
+  type        = string
+  default     = "8.0"
+}
+
+variable "logicapp_function_contract" {
+  description = "Function HTTP contract used by Logic App. legacy_execute => /api/jobs/execute with JobName payload, durable_jobs_api => /api/jobs with jobName payload."
+  type        = string
+  default     = "legacy_execute"
+
+  validation {
+    condition     = contains(["legacy_execute", "durable_jobs_api"], var.logicapp_function_contract)
+    error_message = "logicapp_function_contract must be one of: legacy_execute, durable_jobs_api."
+  }
+}
+
 variable "function_public_access" {
   description = "true = public inbound endpoint enabled"
   type        = bool

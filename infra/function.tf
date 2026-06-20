@@ -82,7 +82,7 @@ resource "azurerm_function_app_flex_consumption" "main" {
   storage_user_assigned_identity_id = azurerm_user_assigned_identity.func.id
 
   runtime_name    = "dotnet-isolated"
-  runtime_version = "8.0"
+  runtime_version = var.function_runtime_version
 
   maximum_instance_count        = var.function_maximum_instance_count
   instance_memory_in_mb         = 2048

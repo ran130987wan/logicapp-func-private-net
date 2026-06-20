@@ -28,13 +28,17 @@ resource "azurerm_logic_app_action_http" "call_function" {
   name         = "CallFunction"
   logic_app_id = each.value.id
   method       = "POST"
-  uri          = "https://${azurerm_function_app_flex_consumption.main.default_hostname}/api/jobs/execute${var.function_host_key != "" ? "?code=${var.function_host_key}" : ""}"
+  uri          = var.logicapp_function_contract == "durable_jobs_api" ? "https://${azurerm_function_app_flex_consumption.main.default_hostname}/api/jobs${var.function_host_key != "" ? "?code=${var.function_host_key}" : ""}" : "https://${azurerm_function_app_flex_consumption.main.default_hostname}/api/jobs/execute${var.function_host_key != "" ? "?code=${var.function_host_key}" : ""}"
 
   headers = {
     Content-Type = "application/json"
   }
 
-  body = jsonencode({
+  body = var.logicapp_function_contract == "durable_jobs_api" ? jsonencode({
+    jobName    = local.schedules_by_name[each.key].job_name
+    tenantId   = null
+    parameters = {}
+    }) : jsonencode({
     JobName   = local.schedules_by_name[each.key].job_name
     TargetEnv = "CP-${var.environment}"
     ForceRun  = false
