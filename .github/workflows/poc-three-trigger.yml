@@ -72,7 +72,7 @@ jobs:
           : > "$log_file"
 
           pushd "${{ steps.project.outputs.project_dir }}" >/dev/null
-          func start --dotnet-isolated >"$log_file" 2>&1 &
+          dotnet run >"$log_file" 2>&1 &
           func_pid=$!
           popd >/dev/null
 

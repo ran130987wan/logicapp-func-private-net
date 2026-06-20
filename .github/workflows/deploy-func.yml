@@ -40,13 +40,29 @@ jobs:
         run: |
           if [[ -f "${{ env.PROJECT_PATH_REAL }}" ]]; then
             echo "path=${{ env.PROJECT_PATH_REAL }}" >> "$GITHUB_OUTPUT"
+            echo "use_real=true" >> "$GITHUB_OUTPUT"
             echo "Using real maintenance project"
           elif [[ -f "${{ env.PROJECT_PATH_PLACEHOLDER }}" ]]; then
             echo "path=${{ env.PROJECT_PATH_PLACEHOLDER }}" >> "$GITHUB_OUTPUT"
+            echo "use_real=false" >> "$GITHUB_OUTPUT"
             echo "Using placeholder project"
           else
             echo "No supported function project found" >&2
             exit 1
+          fi
+
+      - name: Resolve Terraform cutover vars
+        id: tf_mode
+        shell: bash
+        run: |
+          if [[ "${{ steps.project.outputs.use_real }}" == "true" ]]; then
+            echo "runtime_version=10.0" >> "$GITHUB_OUTPUT"
+            echo "function_contract=durable_jobs_api" >> "$GITHUB_OUTPUT"
+            echo "Using real maintenance Terraform mode"
+          else
+            echo "runtime_version=8.0" >> "$GITHUB_OUTPUT"
+            echo "function_contract=legacy_execute" >> "$GITHUB_OUTPUT"
+            echo "Using placeholder Terraform mode"
           fi
 
       - name: Setup Terraform
@@ -99,4 +115,6 @@ jobs:
           terraform apply -auto-approve \
             -var-file=${{ env.TF_VARS_FILE }} \
             -var "subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-            -var "function_host_key=${{ steps.host_key.outputs.host_key }}"
+            -var "function_host_key=${{ steps.host_key.outputs.host_key }}" \
+            -var "function_runtime_version=${{ steps.tf_mode.outputs.runtime_version }}" \
+            -var "logicapp_function_contract=${{ steps.tf_mode.outputs.function_contract }}"
